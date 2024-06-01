@@ -79,7 +79,7 @@ def show_text(text, size, color, x, y):
 
 def start_screen():
     screen.fill(BLACK)
-    show_text("Space Shooter", 64, WHITE, WIDTH // 2, HEIGHT // 4)
+    show_text("CHANDRAYAN", 64, WHITE, WIDTH // 2, HEIGHT // 4)
     show_text(f"High Score: {high_score}", 36, GREEN, WIDTH // 2, HEIGHT // 2 - 50)
     show_text("Press any key to start", 36, WHITE, WIDTH // 2, HEIGHT // 2)
     show_text("How to Play: Use arrow keys to move, Space to shoot", 24, WHITE, WIDTH // 2, HEIGHT * 3 // 4)
