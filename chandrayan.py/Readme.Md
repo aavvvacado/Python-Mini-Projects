@@ -3,7 +3,7 @@
 Welcome to **Chandrayan**! This is a space shooter game developed in Python using the Pygame library. Navigate your spaceship, shoot down enemies, and try to achieve the highest score. The game also tracks the highest score across sessions.
 
 
-## How to plat!
+## How to play!
   - use your left and right keys to dodge the enemy
   - use spacebar to destroy the enemy
 
