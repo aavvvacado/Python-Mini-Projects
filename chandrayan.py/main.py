@@ -6,9 +6,24 @@ from player import Player
 from enemy import Enemy
 from bullet import Bullet
 
-# Initialize Pygame
-pygame.init()
 
+pygame.init()
+icon_path = "player.png"  
+icon = pygame.image.load(icon_path)
+
+# Set custom icon
+pygame.display.set_icon(icon)
+
+# Create game window
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Your Game Title")
+
+
+
+    # Your game logic and rendering here
+
+    
 
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -172,3 +187,4 @@ while True:
     elif game_state == GAME_OVER:
         game_over_screen()
         game_loop()
+pygame.display.flip()
