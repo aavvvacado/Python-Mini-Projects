@@ -8,38 +8,35 @@ from bullet import Bullet
 from settings import Settings
 from sound_manager import SoundManager
 
-# Initialize Pygame
+
 pygame.init()
 
-# Set up display
+
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chandrayan")
 
 
-
-
-# Load Images
 try:
     player_img = pygame.image.load("player.png").convert_alpha()
     enemy_img = pygame.image.load("enemy.png").convert_alpha()
     bullet_img = pygame.image.load("bullet.png").convert_alpha()
+    player_img = pygame.transform.scale(player_img, (50, 50))  # Resize spaceship
+    enemy_img = pygame.transform.scale(enemy_img, (100, 75))    # Resize enemies
 except pygame.error as e:
     print(f"Error loading images: {e}")
     pygame.quit()
     sys.exit()
-player = Player(player_img, WIDTH, HEIGHT)
 
-# Set up icon
+
 icon = pygame.image.load("player.png")
 pygame.display.set_icon(icon)
 
-# Colors
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 
-# Initialize game objects
 all_sprites = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
@@ -47,7 +44,7 @@ bullets = pygame.sprite.Group()
 player = Player(player_img, WIDTH, HEIGHT)
 all_sprites.add(player)
 
-# Initialize sound manager and settings
+
 sound_manager = SoundManager()
 settings = Settings()
 
@@ -58,7 +55,7 @@ score = 0
 high_score = 0
 font = pygame.font.SysFont(None, 36)
 
-# High score file
+
 HIGH_SCORE_FILE = "high_score.txt"
 
 def load_high_score():
@@ -79,31 +76,31 @@ def save_high_score():
 def show_text(text, size, color, x, y):
     font = pygame.font.SysFont(None, size)
     text_surface = font.render(text, True, color)
-    text_rect = text_surface.get_rect()
-    text_rect.center = (x, y)
+    text_rect = text_surface.get_rect(center=(x, y))
     screen.blit(text_surface, text_rect)
+    return text_rect
 
 def start_screen():
     screen.fill(BLACK)
-    show_text("CHANDRAYAN", 64, WHITE, WIDTH // 2, HEIGHT // 4)
-    show_text(f"High Score: {high_score}", 36, GREEN, WIDTH // 2, HEIGHT // 2 - 50)
-    show_text("Press Any Key to Start", 36, WHITE, WIDTH // 2, HEIGHT // 2)
-    show_text("Press S for Settings", 24, WHITE, WIDTH // 2, HEIGHT * 3 // 4)
-    
+    title_rect = show_text("CHANDRAYAN", 80, WHITE, WIDTH // 2, HEIGHT // 6)
+    high_score_rect = show_text(f"High Score: {high_score}", 36, GREEN, WIDTH // 2, HEIGHT // 4 + 50)
+    start_rect = show_text("Start Game", 36, WHITE, WIDTH // 2, HEIGHT // 2)
+    settings_rect = show_text("Settings", 36, WHITE, WIDTH // 2, HEIGHT // 2 + 50)
     pygame.display.flip()
+    return title_rect, high_score_rect, start_rect, settings_rect
 
 def settings_screen():
     options = ["Volume", "Sensitivity"]
     current_selection = 0
-
     adjusting = True
+
     while adjusting:
         screen.fill(BLACK)
         show_text("Settings", 64, WHITE, WIDTH // 2, HEIGHT // 4)
         for i, option in enumerate(options):
             color = GREEN if i == current_selection else WHITE
             value = settings.volume if option == "Volume" else settings.sensitivity
-            show_text(f"{option}: {int(value*100) if option == 'Volume' else value}", 36, color, WIDTH // 2, HEIGHT // 2 - 50 + i * 50)
+            show_text(f"{option}: {int(value * 100) if option == 'Volume' else value}", 36, color, WIDTH // 2, HEIGHT // 2 - 50 + i * 50)
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -112,9 +109,6 @@ def settings_screen():
                 sys.exit()
 
             if event.type == pygame.KEYDOWN:
-
-   
-
                 if event.key == pygame.K_UP:
                     current_selection = (current_selection - 1) % len(options)
                 elif event.key == pygame.K_DOWN:
@@ -131,14 +125,14 @@ def settings_screen():
                     else:
                         settings.adjust_sensitivity(increase=True)
                     sound_manager.set_volume(settings.volume)
-                elif event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
+                elif event.key in [pygame.K_RETURN, pygame.K_ESCAPE]:
                     adjusting = False
 
 def difficulty_screen():
     options = ["Easy", "Medium", "Hard"]
     current_selection = 0
-
     selecting = True
+
     while selecting:
         screen.fill(BLACK)
         show_text("Select Difficulty", 64, WHITE, WIDTH // 2, HEIGHT // 4)
@@ -151,181 +145,156 @@ def difficulty_screen():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     current_selection = (current_selection - 1) % len(options)
                 elif event.key == pygame.K_DOWN:
                     current_selection = (current_selection + 1) % len(options)
-                elif event.key == pygame.K_RETURN:
+                elif event.key in [pygame.K_RETURN, pygame.K_ESCAPE]:
                     return options[current_selection].lower()
 
-def game_over_screen():
-    screen.fill(BLACK)
-    show_text("GAME OVER", 64, WHITE, WIDTH // 2, HEIGHT // 4)
-    show_text(f"Score: {score}", 36, WHITE, WIDTH // 2, HEIGHT // 2)
-    show_text("Press Any Key to Restart", 36, WHITE, WIDTH // 2, HEIGHT * 3 // 4)
-    pygame.display.flip()
-    save_high_score()
-    wait_for_key()
+def create_enemies(num_enemies, speed):
+    enemy_width = enemy_img.get_rect().width
+    enemy_height = enemy_img.get_rect().height
 
-def wait_for_key():
-    waiting = True
-    while waiting:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYUP:
-                waiting = False
+    
+    if enemy_width > WIDTH or enemy_height > HEIGHT:
+        print("Error: Enemy dimensions are larger than screen dimensions.")
+        return
+    
+    for _ in range(num_enemies):
+        x = random.randint(0, max(0, WIDTH - enemy_width))
+        y = random.randint(-enemy_height * 2, -enemy_height)
+        
+        # Debug print to check the generated positions
+        print(f"Generated Enemy Position - X: {x}, Y: {y}")
 
-def create_enemies(num, speed):
-    for _ in range(num):
-        x = random.randint(0, WIDTH - 40)
-        y = random.randint(-100, -40)
-        enemy = Enemy(enemy_img, x, y, initial_speed=speed, width=WIDTH, height=HEIGHT)
+        enemy = Enemy(enemy_img, x, y, speed, WIDTH, HEIGHT)
         all_sprites.add(enemy)
         enemies.add(enemy)
-
 
 def game_loop(difficulty):
     global score, game_state, high_score
 
-    # Reset score at the start of the game loop
+    
     score = 0
 
-    # Set difficulty parameters
+    
     if difficulty == 'easy':
-        enemy_speed = 1
-        num_enemies = 5
+        base_enemy_speed = 1
+        base_num_enemies = 5
     elif difficulty == 'medium':
-        enemy_speed = 2
-        num_enemies = 8
+        base_enemy_speed = 2
+        base_num_enemies = 8
     elif difficulty == 'hard':
-        enemy_speed = 3
-        num_enemies = 12
+        base_enemy_speed = 3
+        base_num_enemies = 12
+    else:
+        print(f"Invalid difficulty: {difficulty}")
+        return
 
     game_state = PLAYING
+    level = 1
 
     all_sprites.empty()
     bullets.empty()
     enemies.empty()
 
-    # Create enemies based on difficulty
-    create_enemies(num_enemies, enemy_speed)
+    player = Player(player_img, WIDTH, HEIGHT)
+    all_sprites.add(player)
+
+    create_enemies(base_num_enemies, base_enemy_speed)
+
+    sound_manager.play_background()
+    sound_manager.set_volume(settings.volume)
 
     while game_state == PLAYING:
-        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    bullet = Bullet(bullet_img, player.rect.centerx, player.rect.top)
-                    all_sprites.add(bullet)
-                    bullets.add(bullet)
-                    sound_manager.play_bullet()
+                    player.shoot(bullet_img, all_sprites, bullets)
 
         # Update
         all_sprites.update()
-        player.update()
 
-        # Check for bullet-enemy collisions
-        hits = pygame.sprite.groupcollide(bullets, enemies, True, True)
-        for hit in hits:
-            score += 1
-            sound_manager.play_explosion()
-            enemy = Enemy(enemy_img, random.randint(0, WIDTH - 40), random.randint(-100, -40), initial_speed=enemy_speed)
-            all_sprites.add(enemy)
-            enemies.add(enemy)
-
-        # Check for enemy-player collisions
+        # Check collisions
         if pygame.sprite.spritecollideany(player, enemies):
-            sound_manager.play_explosion()
             game_state = GAME_OVER
 
-        # Drawing
+        for bullet in bullets:
+            hits = pygame.sprite.spritecollide(bullet, enemies, True)
+            if hits:
+                bullet.kill()
+                score += 10
+
+        
         screen.fill(BLACK)
         all_sprites.draw(screen)
-        show_text(f"Score: {score}", 36, WHITE, 100, 10)
-        show_text(f"High Score: {high_score}", 36, WHITE, WIDTH - 200, 10)
+        show_text(f"Score: {score}", 36, WHITE, WIDTH // 2, 20)
         pygame.display.flip()
 
-        # Cap the frame rate
+        # Regenerate enemies after level
+        if not enemies:
+            level += 1
+            num_enemies = base_num_enemies + 2 * (level - 1)
+            enemy_speed = base_enemy_speed + 0.5 * (level - 1)
+            
+            # Debug prints
+            print(f"Level: {level}, Number of Enemies: {num_enemies}, Enemy Speed: {enemy_speed}")
+            
+            create_enemies(num_enemies, enemy_speed)
+
+        
         pygame.time.Clock().tick(60)
 
-    # Save high score and display game over screen only once after exiting the game loop
-    save_high_score()
-    game_over_screen()
-if __name__ == "__main__":
-    # Initialize Pygame
-    pygame.init()
+# Main Game Loop
+load_high_score()
 
-    # Set up display
-    WIDTH, HEIGHT = 800, 600
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Chandrayan")
-
-    # Load Images
-    try:
-        player_img = pygame.image.load("player.png").convert_alpha()
-        enemy_img = pygame.image.load("enemy.png").convert_alpha()
-        bullet_img = pygame.image.load("bullet.png").convert_alpha()
-    except pygame.error as e:
-        print(f"Error loading images: {e}")
-        pygame.quit()
-        sys.exit()
-
-    # Set up icon
-    icon = pygame.image.load("player.png")
-    pygame.display.set_icon(icon)
-
-    # Colors
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-    GREEN = (0, 255, 0)
-
-    # Initialize game objects
-    all_sprites = pygame.sprite.Group()
-    enemies = pygame.sprite.Group()
-    bullets = pygame.sprite.Group()
-
-    player = Player(player_img, WIDTH, HEIGHT)
-    all_sprites.add(player)
-
-    # Initialize sound manager and settings
-    sound_manager = SoundManager()
-    settings = Settings()
-
-    # Game states
-    START, SETTINGS, DIFFICULTY, PLAYING, GAME_OVER = 0, 1, 2, 3, 4
-    game_state = START
-    score = 0
-    high_score = 0
-    font = pygame.font.SysFont(None, 36)
-
-    # High score file
-    HIGH_SCORE_FILE = "high_score.txt"
-
-    load_high_score()
-    sound_manager.play_background()
-
-    while True:
-        if game_state == START:
-            start_screen()
+current_selection = 0
+menu_options = ["Start Game", "Settings"]
+while True:
+    if game_state == START:
+        title_rect, high_score_rect, start_rect, settings_rect = start_screen()
+        sound_manager.play_background()
+        while game_state == START:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
-                    game_state = DIFFICULTY
-        elif game_state == SETTINGS:
-            settings_screen()
-            game_state = START
-        elif game_state == DIFFICULTY:
-            difficulty = difficulty_screen()
+                    if event.key == pygame.K_UP:
+                        current_selection = (current_selection - 1) % len(menu_options)
+                    elif event.key == pygame.K_DOWN:
+                        current_selection = (current_selection + 1) % len(menu_options)
+                    elif event.key == pygame.K_RETURN:
+                        if current_selection == 0:
+                            game_state = DIFFICULTY
+                        elif current_selection == 1:
+                            game_state = SETTINGS
+            screen.fill(BLACK)
+            show_text("CHANDRAYAN", 80, WHITE, WIDTH // 2, HEIGHT // 4)
+            show_text(f"High Score: {high_score}", 36, GREEN, WIDTH // 2, HEIGHT // 2 - 50)
+            for i, option in enumerate(menu_options):
+                color = GREEN if i == current_selection else WHITE
+                show_text(option, 36, color, WIDTH // 2, HEIGHT // 2 + i * 50)
+            pygame.display.flip()
+    elif game_state == SETTINGS:
+        settings_screen()
+        game_state = START
+    elif game_state == DIFFICULTY:
+        difficulty = difficulty_screen()
+        if difficulty:  
             game_loop(difficulty)
-        elif game_state == GAME_OVER:
-            game_over_screen()
-            game_state = START
+        save_high_score()
+        game_state = GAME_OVER
+    elif game_state == GAME_OVER:
+        screen.fill(BLACK)
+        show_text(f"Game Over! Score: {score}", 64, WHITE, WIDTH // 2, HEIGHT // 2)
+        show_text(f"High Score: {high_score}", 36, GREEN, WIDTH // 2, HEIGHT // 2 + 50)
         pygame.display.flip()
+        pygame.time.wait(3000)
+        game_state = START

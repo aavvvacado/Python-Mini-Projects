@@ -1,27 +1,36 @@
 import pygame
+from bullet import Bullet
+
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, image, screen_width, screen_height):
+    def __init__(self, image, width, height):
         super().__init__()
-        self.image = image
-        self.rect = self.image.get_rect()
-        self.rect.centerx = screen_width // 2
-        self.rect.bottom = screen_height - 10
-        self.speedx = 0
-        self.screen_width = screen_width  # Store screen_width as an attribute
+        self.image = pygame.transform.scale(image, (50, 50))  
+        self.rect = self.image.get_rect(center=(width // 2, height - 50))
+        self.width = width
+        self.height = height
+        self.speed = 5
 
     def update(self):
-        self.speedx = 0
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            self.speedx = -3  # Adjust speed for sensitivity
+            self.rect.x -= self.speed
         if keys[pygame.K_RIGHT]:
-            self.speedx = 3
-        self.rect.x += self.speedx
-        if self.rect.right > self.screen_width:  # Use self.screen_width instead of screen_width
-            self.rect.right = self.screen_width
+            self.rect.x += self.speed
+        if keys[pygame.K_UP]:
+            self.rect.y -= self.speed
+        if keys[pygame.K_DOWN]:
+            self.rect.y += self.speed
+
+        
         if self.rect.left < 0:
             self.rect.left = 0
+        if self.rect.right > self.width:
+            self.rect.right = self.width
+        if self.rect.top < 0:
+            self.rect.top = 0
+        if self.rect.bottom > self.height:
+            self.rect.bottom = self.height
 
     def shoot(self, bullet_image, all_sprites, bullets):
         bullet = Bullet(bullet_image, self.rect.centerx, self.rect.top)

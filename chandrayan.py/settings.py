@@ -8,7 +8,7 @@ class Settings:
     def show_settings(self, screen, width, height):
         screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 36)
-        volume_text = font.render(f"Volume: {self.volume}", True, (255, 255, 255))
+        volume_text = font.render(f"Volume: {self.volume * 100:.0f}", True, (255, 255, 255))
         sensitivity_text = font.render(f"Sensitivity: {self.sensitivity}", True, (255, 255, 255))
         screen.blit(volume_text, (width // 2 - volume_text.get_width() // 2, height // 2 - 50))
         screen.blit(sensitivity_text, (width // 2 - sensitivity_text.get_width() // 2, height // 2 + 50))
